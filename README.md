@@ -456,12 +456,14 @@ speedcore/
   aria2.conf          # Performance configuration (16T×128S)
 ```
 
-### License
+### License / 许可
 
-MIT
+SpeedCore is licensed under the **MIT License** — see [LICENSE](LICENSE) for full text.
+
+This project bundles [aria2](https://github.com/aria2/aria2) (GNU LGPL v2.1) as the download engine. aria2 is copyright Tatsuhiro Tsujikawa and distributed under its own license terms available at [aria2 License](https://github.com/aria2/aria2/blob/master/COPYING).
 
 ---
 
 **Author:** Xiangye
 
-**Acknowledgments:** [aria2](https://github.com/aria2/aria2) by Tatsuhiro Tsujikawa — the backbone download engine that makes this possible.
+**Acknowledgments:** [aria2](https://github.com/aria2/aria2) by Tatsuhiro Tsujikawa — the backbone download engine.
