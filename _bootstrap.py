@@ -4,6 +4,7 @@ ROOT = r"D:\ClaudeCode\speedcore"
 ARIA2C = r"D:\ClaudeCode\speedcore\aria2c.exe"
 ARIA2_CONF = r"D:\ClaudeCode\speedcore\aria2.conf"
 PROXY_SCRIPT = r"D:\ClaudeCode\speedcore\proxy.py"
+WATCHDOG_SCRIPT = os.path.join(ROOT, "watchdog.py")
 PROXY_CONFIG = os.path.join(ROOT, ".upstream_proxy")
 TEMP = os.environ.get("TEMP", os.environ.get("TMP", r"C:\Windows\Temp"))
 ARIA2_LOG = os.path.join(TEMP, "speedcore_aria2.log")
@@ -144,3 +145,12 @@ subprocess.Popen(
     stderr=subprocess.STDOUT
 )
 log("Proxy started — bootstrap done")
+
+# 启动看门狗 (自动检测 + 自动重启)
+log("Starting watchdog...")
+subprocess.Popen(
+    [sys.executable, WATCHDOG_SCRIPT],
+    creationflags=CREATE_FLAGS,
+    close_fds=True
+)
+log("Watchdog started")

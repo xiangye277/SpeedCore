@@ -253,7 +253,7 @@ def install(install_dir: str):
             print(f"  [MISS] {fn} not found in package")
 
     # Copy Python scripts
-    py_files = ["__init__.py", "spd.py", "svc.py", "proxy.py", "tcpopt.py", "divert.py", "tun.py"]
+    py_files = ["__init__.py", "spd.py", "svc.py", "proxy.py", "tcpopt.py", "divert.py", "tun.py", "watchdog.py"]
     for fn in py_files:
         sp = os.path.join(src, fn)
         dp = os.path.join(install_dir, fn)
