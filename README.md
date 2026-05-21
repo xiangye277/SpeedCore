@@ -182,6 +182,8 @@ SpeedProxy 运行在 `127.0.0.1:19999`，通过修改 Windows 系统代理设置
 
 已验证通过：浏览器、各类网盘客户端、游戏平台、IM 工具等。
 
+> **注意：** 部分网盘服务对非会员用户实施服务器端限速，此类限速在服务端执行，SpeedCore 无法突破。若直连下载速度与经 SpeedCore 相同，即为服务器限速所致。
+
 #### 6. 系统服务静默运行
 
 通过 Windows 计划任务实现，而非传统 Windows Service：
@@ -447,6 +449,8 @@ Key points:
 - **NAT table + protocol sniffing**: HTTP Host header / TLS SNI dual-path destination recovery
 
 Verified: browsers, cloud drive clients, game platforms, IM tools, IDEs, and more.
+
+> **Note:** Some cloud drive services enforce server-side rate limiting for non-premium users. This is server-enforced and cannot be bypassed by SpeedCore. If direct download speed matches SpeedCore speed, it is a server-side limit.
 
 #### 6. Silent System-Level Service
 
