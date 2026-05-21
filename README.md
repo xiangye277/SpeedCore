@@ -149,7 +149,7 @@ SpeedProxy 运行在 `127.0.0.1:19999`，通过修改 Windows 系统代理设置
 
 #### 5. TUN 全局透明代理
 
-对于不读取系统代理设置的程序（Steam、微信、网盘客户端、游戏启动器等），SpeedCore 通过 WinDivert 在内核网络层拦截所有 TCP 流量，实现真正的全电脑透明代理：
+对于不读取系统代理设置的程序（游戏平台、IM 工具、网盘客户端等），SpeedCore 通过 WinDivert 在内核网络层拦截所有 TCP 流量，实现真正的全电脑透明代理：
 
 ```
 原程序 → TCP SYN (目标: internet:port)
@@ -180,7 +180,7 @@ SpeedProxy 运行在 `127.0.0.1:19999`，通过修改 Windows 系统代理设置
 - **覆盖所有 TCP 端口**: 不限于 80/443，网盘私有协议也能拦截
 - **NAT 表 + 协议嗅探**: HTTP Host 头 / TLS SNI 双路径还原目标
 
-已验证通过：Chrome/Edge、夸克网盘、阿里云盘、Steam、VS Code 等。
+已验证通过：浏览器、各类网盘客户端、游戏平台、IM 工具等。
 
 #### 6. 系统服务静默运行
 
@@ -196,7 +196,7 @@ SpeedProxy 运行在 `127.0.0.1:19999`，通过修改 Windows 系统代理设置
 
 - **开发环境**: 下载大型 SDK、虚拟机镜像、数据库备份 — 实测提速 5~8 倍
 - **日常办公**: 浏览器下载邮件附件、文档包、设计素材 — 无感自动加速
-- **游戏下载**: Steam/Epic 等平台的客户端不走系统代理时，可用 `spd get <URL>` 命令行下载
+- **游戏下载**: 游戏平台客户端不走系统代理时，可用 `spd get <URL>` 命令行下载
 - **服务器运维**: 在 Windows Server 上下发大文件、补丁包、日志归档
 - **家庭 NAS**: 配合aria2的 `--all-proxy` 走代理下载海外资源，满速下载
 
@@ -415,7 +415,7 @@ If upstream is unreachable → aria2 falls back to direct mode
 
 #### 5. TUN Global Transparent Proxy
 
-For programs that bypass system proxy (Steam, WeChat, cloud drive clients, game launchers, etc.), SpeedCore intercepts ALL TCP traffic at the kernel network layer via WinDivert:
+For programs that bypass system proxy (game platforms, IM tools, cloud drive clients, etc.), SpeedCore intercepts ALL TCP traffic at the kernel network layer via WinDivert:
 
 ```
 Program → TCP SYN (dst: internet:port)
@@ -446,7 +446,7 @@ Key points:
 - **All TCP ports**: Not limited to 80/443 — proprietary protocols intercepted too
 - **NAT table + protocol sniffing**: HTTP Host header / TLS SNI dual-path destination recovery
 
-Verified: Chrome/Edge, QuarkDrive, AliyunDrive, Steam, VS Code, and more.
+Verified: browsers, cloud drive clients, game platforms, IM tools, IDEs, and more.
 
 #### 6. Silent System-Level Service
 
