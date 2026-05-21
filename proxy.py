@@ -581,6 +581,139 @@ class ThreadingProxyServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
 
+# ─── TUN 透明代理 ──────────────────────────────────────────
+
+TUN_PORT = 19998
+TUN_MAP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tun_map.json")
+
+
+def _load_tun_map() -> dict:
+    try:
+        import json as _json
+        with open(TUN_MAP_FILE, "r") as f:
+            return _json.load(f)
+    except Exception:
+        return {}
+
+
+def _tun_relay(client_sock, client_addr):
+    """透明代理转发 — 查 NAT 表还原原始目标，双向字节隧道"""
+    import json as _json
+    src_ip, src_port = client_addr[0], client_addr[1]
+
+    # Look up original destination
+    tun_map = _load_tun_map()
+    key = f"{src_ip}:{src_port}"
+    entry = tun_map.get(key)
+    if entry is None:
+        # Try recently added (re-read after short delay)
+        time.sleep(0.1)
+        tun_map = _load_tun_map()
+        entry = tun_map.get(key)
+
+    if entry is None:
+        # Can't find destination — try reading Host from HTTP header or SNI
+        client_sock.settimeout(3)
+        try:
+            peek = client_sock.recv(4096, socket.MSG_PEEK)
+            # Try HTTP Host header
+            host_match = re.search(rb"Host:\s*([^\r\n]+)", peek)
+            if host_match:
+                host_str = host_match.group(1).decode("ascii", errors="ignore").strip()
+                if ":" in host_str:
+                    host, port_str = host_str.rsplit(":", 1)
+                    dst_host, dst_port = host, int(port_str)
+                else:
+                    dst_host, dst_port = host_str, 80
+            else:
+                # Try TLS SNI
+                if peek[:3] == b"\x16\x03\x01" or peek[:3] == b"\x16\x03\x03":
+                    # TLS ClientHello — parse SNI
+                    try:
+                        sni_len = int.from_bytes(peek[5:7], "big")
+                        if len(peek) > 7 + sni_len:
+                            sni_data = peek[7:7 + sni_len]
+                            # Find SNI extension (type 0x00 0x00)
+                            i = 0
+                            while i < len(sni_data) - 4:
+                                if sni_data[i:i+2] == b"\x00\x00":
+                                    sni_name_len = int.from_bytes(sni_data[i+2:i+4], "big")
+                                    sni_name = sni_data[i+4:i+4+sni_name_len].decode("ascii", errors="ignore")
+                                    dst_host, dst_port = sni_name, 443
+                                    break
+                                i += 2
+                if dst_host is None:
+                    client_sock.close()
+                    return
+        except Exception:
+            try:
+                client_sock.close()
+            except Exception:
+                pass
+            return
+
+        dst_host, dst_port = entry[0], int(entry[1]) if entry else (host_str, 80)
+
+    dst_host, dst_port = entry[0], int(entry[1])
+
+    # Connect to original destination
+    try:
+        remote = socket.create_connection((dst_host, dst_port), timeout=10)
+    except Exception:
+        try:
+            client_sock.close()
+        except Exception:
+            pass
+        return
+
+    # Bidirectional relay
+    def pipe(src, dst):
+        try:
+            while True:
+                data = src.recv(BUF_SIZE)
+                if not data:
+                    break
+                dst.sendall(data)
+        except Exception:
+            pass
+
+    t1 = threading.Thread(target=pipe, args=(client_sock, remote), daemon=True)
+    t2 = threading.Thread(target=pipe, args=(remote, client_sock), daemon=True)
+    t1.start()
+    t2.start()
+    t1.join(timeout=300)
+    t2.join(timeout=300)
+
+    try:
+        client_sock.close()
+    except Exception:
+        pass
+    try:
+        remote.close()
+    except Exception:
+        pass
+
+
+def _start_tun_listener():
+    """启动透明代理监听 (端口 19998) — 后台线程"""
+    tun_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tun_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    tun_sock.bind(("127.0.0.1", TUN_PORT))
+    tun_sock.listen(128)
+    tun_sock.settimeout(1)
+    _log(f"TUN transparent proxy listening on 127.0.0.1:{TUN_PORT}")
+
+    while True:
+        try:
+            client, addr = tun_sock.accept()
+            t = threading.Thread(target=_tun_relay, args=(client, addr), daemon=True)
+            t.start()
+        except socket.timeout:
+            continue
+        except Exception:
+            break
+
+
 # ─── 服务管理 ────────────────────────────────────────────
 
 def run_proxy(port: int = PROXY_PORT):
@@ -590,6 +723,10 @@ def run_proxy(port: int = PROXY_PORT):
     upstream = _detect_upstream_proxy()
     UPSTREAM_PROXY = upstream
     _url_opener = _build_url_opener(upstream)
+
+    # 启动 TUN 透明代理监听 (:19998)
+    tun_thread = threading.Thread(target=_start_tun_listener, daemon=True)
+    tun_thread.start()
 
     server = ThreadingProxyServer((PROXY_HOST, port), ProxyHandler)
     print(f"SpeedCore Proxy -> http://{PROXY_HOST}:{port}")
@@ -601,6 +738,7 @@ def run_proxy(port: int = PROXY_PORT):
         print(f"  模式: 直连 (无上游代理)")
     print(f"  PAC: http://{PROXY_HOST}:{port}/proxy.pac")
     print(f"  Status: http://{PROXY_HOST}:{port}/speedcore-status")
+    print(f"  TUN:  tcp://{PROXY_HOST}:{TUN_PORT} (transparent)")
 
     _log(f"Proxy started on port {port}, upstream={upstream or 'none'}")
 

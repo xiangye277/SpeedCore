@@ -699,16 +699,55 @@ spd — SpeedCore 系统级多线程下载加速器
     spd proxy off     恢复 (有备份则还原外部代理，无备份则直连)
     spd proxy status  查看代理状态
 
+  TUN (全电脑透明代理):
+    spd tun on        启动 TUN 模式 (需管理员, WinDivert 拦截所有 TCP 80/443)
+    spd tun off       停止 TUN 模式
+    spd tun status    查看 TUN 状态
+
   下载:
     spd get <URL>     CLI多线程下载 (直连aria2c)
     spd speedtest     测速
 
   示例:
-    spd proxy detect  # 先检测环境
     spd start         # 启动引擎
-    spd proxy on      # 启用加速（自动检测冲突）
+    spd proxy on      # 启用代理加速
+    spd tun on        # 开启全局透明代理（所有程序自动加速）
     spd speedtest     # 验证效果
 """
+
+
+def cmd_tun(action: str = "status"):
+    """TUN 透明代理控制"""
+    from tun import is_tun_running, stop_tun, run_tun
+
+    if action == "on" or action == "start":
+        if is_tun_running():
+            print("TUN 已在运行中。")
+            print("运行 'spd tun off' 停止。")
+            return
+        print("启动 TUN 全局透明代理...")
+        print("所有程序的 TCP 80/443 流量将自动走 SpeedCore。")
+        print("按 Ctrl+C 停止。")
+        try:
+            run_tun()
+        except OSError as e:
+            print(f"[FAIL] {e}")
+            print("  需要管理员权限且 WinDivert 驱动已安装。")
+            print("  运行 'spd start' 重新启动服务（含驱动注册）。")
+    elif action == "off" or action == "stop":
+        stop_tun()
+    elif action == "status":
+        if is_tun_running():
+            print("TUN: [OK] 运行中 — 全电脑 TCP 80/443 走 SpeedCore")
+            # Check port 19998
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            tun_ok = sock.connect_ex(("127.0.0.1", 19998)) == 0
+            sock.close()
+            print(f"  透明代理端口: {'[OK] :19998' if tun_ok else '[FAIL] :19998'}")
+        else:
+            print("TUN: [OFF] 未启用。")
+            print("  运行 'spd tun on' 启动全局透明代理。")
 
 
 def main():
@@ -737,6 +776,9 @@ def main():
             action = "on"
             force = True
         cmd_proxy(action, force)
+    elif cmd == "tun":
+        action = sys.argv[2] if len(sys.argv) > 2 else "status"
+        cmd_tun(action)
     elif cmd == "get":
         if len(sys.argv) < 3:
             print("用法: spd get <URL> [文件名]")

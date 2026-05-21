@@ -9,7 +9,7 @@
 import os, sys, shutil, subprocess, ctypes
 
 DEFAULT_DIR = r"C:\Program Files\SpeedCore"
-FILES = ["aria2c.exe", "aria2.conf"]
+FILES = ["aria2c.exe", "aria2.conf", "WinDivert.dll", "WinDivert64.sys"]
 
 # ═══════════════════════════════════════════════════════════════
 # 法律声明 / Legal Disclaimer
@@ -249,7 +249,7 @@ def install(install_dir: str):
             print(f"  [MISS] {fn} not found in package")
 
     # Copy Python scripts
-    py_files = ["__init__.py", "spd.py", "svc.py", "proxy.py", "tcpopt.py"]
+    py_files = ["__init__.py", "spd.py", "svc.py", "proxy.py", "tcpopt.py", "divert.py", "tun.py"]
     for fn in py_files:
         sp = os.path.join(src, fn)
         dp = os.path.join(install_dir, fn)
