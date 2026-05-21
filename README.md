@@ -60,7 +60,7 @@ SpeedCore 在系统代理层拦截下载请求，将单线程下载拆分为 128
   │  aria2c      │    │  上游代理     │
   │  :16800      │    │  (自动检测)   │
   │              │    │              │
-  │  16 线程     │    │  自由猫/Clash │
+  │  16 线程     │    │  Clash/v2ray │
   │  128 分片    │    │  或直连      │
   │  32 并发任务 │    └──────────────┘
   └──────────────┘
@@ -118,7 +118,7 @@ SpeedProxy 运行在 `127.0.0.1:19999`，通过修改 Windows 系统代理设置
 
 #### 3. 代理自动检测与容错
 
-启动时自动检测上游代理（自由猫 / Clash / v2ray 等），检测链路：
+启动时自动检测上游代理（Clash / v2ray / 等上游代理 等），检测链路：
 
 ```
 缓存文件 (.upstream_proxy)
@@ -283,7 +283,7 @@ SpeedCore intercepts downloads at the system proxy layer, splits them into 128 c
   │  :16800      │    │  (auto-detect│
   │              │    │   or direct) │
   │  16 conns    │    │              │
-  │  128 splits  │    │  Ziyoumao /  │
+  │  128 splits  │    │  Clash / v2ray / │
   │  32 jobs     │    │  Clash / etc │
   └──────────────┘    └──────────────┘
        │
@@ -340,7 +340,7 @@ Configuration:
 
 #### 3. Upstream Proxy Auto-Detection & Fault Tolerance
 
-At startup, the bootstrap script detects the upstream proxy (Ziyoumao / Clash / v2ray / etc.):
+At startup, the bootstrap script detects the upstream proxy (Clash / v2ray /Clash / v2ray / etc.):
 
 ```
 Cache file (.upstream_proxy)
