@@ -1,4 +1,4 @@
-"""SpeedCore Setup — 一键安装到系统，注册开机自启服务。
+﻿"""SpeedCore Setup — 一键安装到系统，注册开机自启服务。
 
 用法:
   SpeedCore-Setup.exe              # 安装到默认目录
@@ -20,8 +20,8 @@ LICENSE_ZH = r"""
 
   版权所有 (c) 2026 Xiangye
 
-  本软件按 MIT 许可证发布，供用户免费使用、复制、修改、合并、出版发行、
-  再许可及/或销售本软件的副本。
+  本软件按非商业使用许可发布。个人、教育机构和非营利组织可在非商业
+  目的下免费使用、复制、修改和分发本软件。商业使用（包括但不限于企业部署、商业捆绑、SaaS/云服务集成）须获得作者书面授权。
 
   本软件按「原样」提供，不作任何明示或默示的保证，包括但不限于对适销性、
   特定用途适用性和非侵权性的保证。在任何情况下，作者或版权持有人均不对
@@ -71,13 +71,13 @@ LICENSE_EN = r"""
 
   Copyright (c) 2026 Xiangye
 
-  Permission is hereby granted, free of charge, to any person obtaining
-  a copy of this software and associated documentation files, to deal
-  in the Software without restriction, including without limitation
-  the rights to use, copy, modify, merge, publish, distribute,
-  sublicense, and/or sell copies of the Software, and to permit persons
-  to whom the Software is furnished to do so, subject to the following
-  conditions: [...]
+  This software is licensed under a Non-Commercial Use License. Personal,
+  educational, and non-profit use is permitted free of charge. Commercial
+  use (including enterprise deployment, bundling, SaaS/cloud integration)
+  requires explicit written authorization from the author.
+  
+  
+  
 
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF

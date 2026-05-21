@@ -458,7 +458,9 @@ speedcore/
 
 ### License / 许可
 
-SpeedCore is licensed under the **MIT License** — see [LICENSE](LICENSE) for full text.
+SpeedCore is licensed under a **Non-Commercial Use License**. Commercial use requires explicit authorization from the author. See [LICENSE](LICENSE) for full terms.
+
+SpeedCore 采用**非商业使用许可**。商业使用需获得作者书面授权。完整条款见 [LICENSE](LICENSE)。
 
 This project bundles [aria2](https://github.com/aria2/aria2) (GNU LGPL v2.1) as the download engine. aria2 is copyright Tatsuhiro Tsujikawa and distributed under its own license terms available at [aria2 License](https://github.com/aria2/aria2/blob/master/COPYING).
 
