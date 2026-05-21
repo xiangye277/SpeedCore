@@ -1,21 +1,23 @@
 """SpeedCore Watchdog — 自动检测运行状态，异常自动重启。
 
 作为 _bootstrap.py 最后一步启动，每 30 秒检测一次：
-  - aria2c 进程 + RPC 可达
-  - 代理端口 :19999 监听
+  - aria2c RPC :16800
+  - 代理端口 :19999 + :19998 (TUN)
+  - TUN 进程
   - 发现异常 → 自动重启对应组件
-  - 记录所有事件到日志
 """
 
-import os, sys, time, socket, json, subprocess, urllib.request
+import os, sys, time, socket, json, subprocess, urllib.request, ctypes
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 ARIA2C = os.path.join(ROOT, "aria2c.exe")
 ARIA2_CONF = os.path.join(ROOT, "aria2.conf")
 PROXY_SCRIPT = os.path.join(ROOT, "proxy.py")
+TUN_SCRIPT = os.path.join(ROOT, "tun.py")
+PID_FILE = os.path.join(ROOT, "tun.pid")
 TEMP = os.environ.get("TEMP", os.environ.get("TMP", r"C:\Windows\Temp"))
 WATCHDOG_LOG = os.path.join(TEMP, "speedcore_watchdog.log")
-INTERVAL = 30  # seconds between checks
+INTERVAL = 30
 CREATE_NO_WINDOW = 0x08000000
 DETACHED_PROCESS = 0x00000008
 CREATE_FLAGS = CREATE_NO_WINDOW | DETACHED_PROCESS
@@ -30,7 +32,6 @@ def log(msg: str):
 
 
 def check_port(port: int) -> bool:
-    """TCP connect 检测端口是否在监听"""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(2)
     try:
@@ -43,58 +44,77 @@ def check_port(port: int) -> bool:
 
 
 def check_aria2_rpc() -> bool:
-    """检测 aria2 RPC 是否可达"""
     try:
         data = json.dumps({"jsonrpc": "2.0", "id": "w", "method": "aria2.getVersion"}).encode()
         r = urllib.request.urlopen("http://127.0.0.1:16800/jsonrpc", data, timeout=3)
-        resp = json.loads(r.read())
-        return "result" in resp
+        return "result" in json.loads(r.read())
     except Exception:
         return False
 
 
-def start_aria2(upstream_proxy: str = ""):
-    """启动 aria2c 进程"""
+def check_tun_process() -> bool:
+    """Check if TUN process is alive via PID file"""
+    try:
+        with open(PID_FILE, "r") as f:
+            pid = int(f.read().strip())
+        kernel32 = ctypes.windll.kernel32
+        h = kernel32.OpenProcess(0x0400, False, pid)
+        if h:
+            kernel32.CloseHandle(h)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def start_aria2(upstream: str = ""):
     log("Starting aria2c...")
     try:
         cmd = [ARIA2C, f"--conf-path={ARIA2_CONF}",
                f"--log={os.path.join(TEMP, 'speedcore_aria2.log')}",
                "--log-level=error"]
-        if upstream_proxy:
-            cmd.append(f"--all-proxy={upstream_proxy}")
+        if upstream:
+            cmd.append(f"--all-proxy={upstream}")
         subprocess.Popen(cmd, creationflags=CREATE_FLAGS, close_fds=True)
         log("aria2c started")
-        return True
     except Exception as e:
         log(f"aria2c start failed: {e}")
-        return False
 
 
-def start_proxy(upstream_proxy: str = ""):
-    """启动代理进程"""
+def start_proxy(upstream: str = ""):
     log("Starting proxy...")
     try:
         env = os.environ.copy()
-        if upstream_proxy:
-            env["HTTP_PROXY"] = upstream_proxy
-            env["HTTPS_PROXY"] = upstream_proxy
+        if upstream:
+            env["HTTP_PROXY"] = upstream
+            env["HTTPS_PROXY"] = upstream
         subprocess.Popen(
             [sys.executable, PROXY_SCRIPT, "19999"],
-            creationflags=CREATE_FLAGS,
-            close_fds=True,
-            env=env,
+            creationflags=CREATE_FLAGS, close_fds=True, env=env,
             stdout=open(os.path.join(TEMP, "speedcore_proxy.log"), "a"),
             stderr=subprocess.STDOUT,
         )
         log("proxy started")
-        return True
     except Exception as e:
         log(f"proxy start failed: {e}")
-        return False
+
+
+def start_tun():
+    """Start TUN transparent proxy process"""
+    log("Starting TUN...")
+    try:
+        subprocess.Popen(
+            [sys.executable, TUN_SCRIPT, "start"],
+            creationflags=CREATE_FLAGS, close_fds=True,
+            stdout=open(os.path.join(TEMP, "speedcore_tun.log"), "a"),
+            stderr=subprocess.STDOUT,
+        )
+        log("TUN started")
+    except Exception as e:
+        log(f"TUN start failed: {e}")
 
 
 def get_upstream_proxy() -> str:
-    """读取上游代理缓存"""
     try:
         cfg = os.path.join(ROOT, ".upstream_proxy")
         with open(cfg, "r") as f:
@@ -104,53 +124,73 @@ def get_upstream_proxy() -> str:
 
 
 def run():
-    """启动看门狗 — 阻塞运行，每 INTERVAL 秒循环检测"""
     log("=" * 40)
     log("Watchdog started")
-    log(f"  PID: {os.getpid()}")
-    log(f"  Interval: {INTERVAL}s")
+    log(f"  PID: {os.getpid()}  Interval: {INTERVAL}s")
+    log(f"  Checks: aria2c :16800 | proxy :19999 | TUN :19998")
 
     upstream = get_upstream_proxy()
-    consecutive_failures = 0
+    failures = {"aria2": 0, "proxy": 0, "tun": 0}
 
     while True:
         aria2_ok = check_aria2_rpc()
         proxy_ok = check_port(19999)
+        tun_ok = check_port(19998) or check_tun_process()
 
+        # ── aria2c ──
         if not aria2_ok:
-            log(f"[!] aria2c DOWN — restarting (failure #{consecutive_failures + 1})")
+            failures["aria2"] += 1
+            log(f"[!] aria2c DOWN (#{failures['aria2']}) — restarting")
             start_aria2(upstream)
-            time.sleep(5)  # Wait for startup
+            time.sleep(5)
             if check_aria2_rpc():
-                log("  -> aria2c recovered")
-                consecutive_failures = 0
-            else:
-                consecutive_failures += 1
+                log("  aria2c recovered")
+                failures["aria2"] = 0
 
+        # ── proxy ──
         if not proxy_ok:
-            log(f"[!] proxy :19999 DOWN — restarting")
+            failures["proxy"] += 1
+            log(f"[!] proxy :19999 DOWN (#{failures['proxy']}) — restarting")
             start_proxy(upstream)
             time.sleep(3)
             if check_port(19999):
-                log("  -> proxy recovered")
-            else:
-                log("  -> proxy still down")
+                log("  proxy recovered")
+                failures["proxy"] = 0
 
-        # Log periodic status
-        if aria2_ok and proxy_ok:
-            if consecutive_failures > 0:
-                log("Both services healthy — resetting failure counter")
-                consecutive_failures = 0
+        # ── TUN ──
+        if not tun_ok:
+            failures["tun"] += 1
+            log(f"[!] TUN :19998 DOWN (#{failures['tun']}) — restarting")
+            # Kill stale TUN process if PID file exists
+            try:
+                subprocess.run(f"taskkill /f /fi \"IMAGENAME eq python.exe\" /fi \"WINDOWTITLE eq *tun*\"",
+                               shell=True, capture_output=True, timeout=3)
+            except Exception:
+                pass
+            start_tun()
+            time.sleep(5)
+            if check_port(19998) or check_tun_process():
+                log("  TUN recovered")
+                failures["tun"] = 0
 
-        # If too many consecutive failures, escalate
-        if consecutive_failures >= 10:
-            log("[CRITICAL] 10 consecutive failures — giving up this cycle, system may need intervention")
+        # ── periodic status ──
+        if aria2_ok and proxy_ok and tun_ok:
+            reset = [k for k, v in failures.items() if v > 0]
+            if reset:
+                log(f"All healthy — reset: {reset}")
+                for k in reset:
+                    failures[k] = 0
+
+        # ── escalation ──
+        for name, count in failures.items():
+            if count >= 10:
+                log(f"[CRITICAL] {name} — 10 consecutive failures")
 
         time.sleep(INTERVAL)
 
 
 if __name__ == "__main__":
-    print("SpeedCore Watchdog — auto-detect + auto-restart")
-    print(f"  PID: {os.getpid()}")
-    print(f"  Log: {WATCHDOG_LOG}")
+    print("SpeedCore Watchdog")
+    print(f"  PID: {os.getpid()}  Log: {WATCHDOG_LOG}")
+    print(f"  Guarding: aria2c :16800 | proxy :19999 | TUN :19998")
     run()
