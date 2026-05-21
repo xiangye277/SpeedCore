@@ -43,8 +43,10 @@ LICENSE_ZH = r"""
      提示确认，且提供回退命令（spd tcpopt --revert）。
 
   3. 第三方组件
-     本软件集成了 aria2（GNU LGPL v2.1 许可证）。aria2 的完整许可证文本
-     可在其官方网站获取：https://github.com/aria2/aria2
+     本软件集成 aria2 (GNU LGPL v2.1) 和 WinDivert (GNU LGPL v3)，
+     二者均按其自身许可条款分发。完整许可证：
+     - aria2: https://github.com/aria2/aria2
+     - WinDivert: https://www.reqrypt.org/windivert.html
 
   4. 代理与网络流量
      本软件在安装时检测并记录当前系统代理设置，用于将非下载流量（网页
@@ -99,8 +101,10 @@ LICENSE_EN = r"""
      command (spd tcpopt --revert) is provided.
 
   3. Third-Party Components
-     This software bundles aria2 (GNU LGPL v2.1).
-     Full license: https://github.com/aria2/aria2
+     This software bundles aria2 (GNU LGPL v2.1) and WinDivert (GNU
+     LGPL v3), both distributed under their own license terms.
+     - aria2: https://github.com/aria2/aria2
+     - WinDivert: https://www.reqrypt.org/windivert.html
 
   4. Proxy & Network Traffic
      This software detects system proxy settings during installation

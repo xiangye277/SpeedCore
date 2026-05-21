@@ -3,47 +3,46 @@ Copyright (c) 2026 Xiangye
 保留所有权利。
 
 
-                        非商业使用许可
+                      非商业使用许可
 
 1. 授权范围
 
-  本软件的作者 Xiangye（以下简称"作者"）在此授予任何个人或组织在
-  非商业目的下免费使用、复制、修改、分发本软件及其文档的权利。
+  本软件作者 Xiangye（以下简称"作者"）授予任何个人或组织在非商业
+  目的下免费使用、复制、修改、分发本软件及其文档的权利。
 
-2. 非商业定义
+2. 非商业使用定义
 
-  "非商业使用"指不以获取经济利益或商业利益为目的的使用，包括但不限于：
+  "非商业使用"指不以获取经济利益为目的的使用，包括但不限于：
   - 个人学习、研究、测试
   - 教育机构教学演示
-  - 非营利组织的内部使用
-  - 个人家庭网络环境下的下载加速
+  - 非营利组织内部使用
+  - 个人家庭网络下载加速
 
-  以下行为视为商业使用，需要获得作者书面授权：
-  - 将本软件集成到商业产品或服务中进行销售或捆绑分发
-  - 在企业、政府、商业环境中部署超过 5 台设备
-  - 将本软件作为 SaaS、云服务或商业解决方案的组成部分提供给客户
-  - 以任何形式向最终用户收费提供本软件的功能或服务
+  以下行为视为商业使用，须获得作者书面授权：
+  - 将本软件集成到商业产品或服务中销售或捆绑分发
+  - 在企业、政府、商业环境部署超过 5 台设备
+  - 将本软件作为 SaaS、云服务或商业解决方案组成部分提供给客户
+  - 以任何形式向最终用户收费提供本软件功能或服务
 
 3. 商业授权
 
-  任何商业使用必须获得作者的明确书面授权。商业授权可能涉及授权费用。
-  商业授权申请请联系作者。
+  任何商业使用须获得作者明确书面授权，可能涉及授权费用。
 
 4. 第三方组件
 
-  本软件集成了 aria2（GNU LGPL v2.1 许可证）。aria2 的许可条款独立于
-  本协议，使用 aria2 即表示您同时接受 LGPL v2.1 的条款。aria2 的完整
-  许可证参见：https://github.com/aria2/aria2/blob/master/COPYING
+  本软件集成以下第三方组件，按其自身许可条款分发：
+  - aria2 (GNU LGPL v2.1) — https://github.com/aria2/aria2
+  - WinDivert (GNU LGPL v3) — https://www.reqrypt.org/windivert.html
 
 5. 免责声明
 
-  本软件按"原样"提供，不作任何明示或默示的保证。在任何情况下，作者
-  均不对因使用或无法使用本软件而产生的任何直接或间接损失承担责任。
+  本软件按"原样"提供，不作任何明示或默示的保证。在任何情况下，
+  作者均不对因使用或无法使用本软件而产生的直接或间接损失承担责任。
 
 6. 终止
 
-  如违反本协议任何条款，授予的权利将自动终止。终止后必须停止使用并
-  销毁所有副本。
+  违反本协议任何条款，授予的权利自动终止。终止后须停止使用并销毁
+  所有副本。
 
 
 ============================================================
@@ -54,56 +53,51 @@ Copyright (c) 2026 Xiangye
 All Rights Reserved.
 
 
-                    Non-Commercial Use License
+                  Non-Commercial Use License
 
 1. Grant of Rights
 
-  The author, Xiangye (hereinafter "Author"), hereby grants any person
-  or organization the right to use, copy, modify, and distribute this
-  software and its documentation free of charge for non-commercial
-  purposes only.
+  The author, Xiangye, grants any person or organization the right
+  to use, copy, modify, and distribute this software and its
+  documentation free of charge for non-commercial purposes only.
 
-2. Non-Commercial Definition
+2. Definition of Non-Commercial Use
 
-  "Non-commercial use" means use without intent of financial gain or
-  commercial advantage, including but not limited to:
+  "Non-commercial use" means use without intent of financial gain,
+  including but not limited to:
   - Personal study, research, and testing
-  - Educational institution teaching demonstrations
+  - Educational institution teaching
   - Internal use by non-profit organizations
   - Personal home network download acceleration
 
   The following constitute commercial use and require written
   authorization from the Author:
-  - Integrating this software into commercial products or services
-    for sale or bundled distribution
+  - Integrating into commercial products or services for sale
   - Deploying on more than 5 devices in enterprise, government,
     or commercial environments
-  - Providing this software as part of SaaS, cloud services, or
-    commercial solutions to customers
-  - Charging end users for access to this software's functionality
-    or services in any form
+  - Providing as part of SaaS, cloud services, or commercial
+    solutions to customers
+  - Charging end users for access in any form
 
 3. Commercial Authorization
 
-  Any commercial use must obtain explicit written authorization from
-  the Author. Commercial authorization may involve licensing fees.
-  Contact the Author for commercial licensing inquiries.
+  Any commercial use requires explicit written authorization from
+  the Author. Licensing fees may apply.
 
 4. Third-Party Components
 
-  This software bundles aria2 (GNU LGPL v2.1). aria2's license terms
-  are independent of this agreement. Using aria2 means you also accept
-  the LGPL v2.1 terms. Full aria2 license:
-  https://github.com/aria2/aria2/blob/master/COPYING
+  This software bundles third-party components distributed under
+  their own license terms:
+  - aria2 (GNU LGPL v2.1) — https://github.com/aria2/aria2
+  - WinDivert (GNU LGPL v3) — https://www.reqrypt.org/windivert.html
 
 5. Disclaimer
 
   THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR
-  OTHER LIABILITY ARISING FROM THE USE OR INABILITY TO USE THIS SOFTWARE.
+  OTHER LIABILITY ARISING FROM USE OR INABILITY TO USE THIS SOFTWARE.
 
 6. Termination
 
-  Rights granted under this license will terminate automatically upon
-  any breach of its terms. Upon termination, all copies must be
-  destroyed.
+  Rights granted under this license terminate automatically upon
+  breach of any terms. Upon termination, all copies must be destroyed.
