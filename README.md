@@ -80,6 +80,7 @@ SpeedCore 在系统代理层拦截下载请求，将单线程下载拆分为 128
 | **上游代理穿透** | `urllib.request.ProxyHandler` 自动检测链 | 非下载流量自动走用户原有的科学上网代理，不影响日常上网 |
 | **TCP/IP 优化** | Windows Registry + netsh + CTCP 拥塞控制 | 注册表调优 TCP 窗口、RSS 多队列、Chimney 卸载、网卡参数 |
 | **系统服务** | `schtasks` + SYSTEM 账户 + Session 0 | 开机自启、无窗口静默运行、最高系统权限、普通用户无法误杀 |
+| **全局拦截** | [WinDivert](https://www.reqrypt.org/windivert.html) 内核级数据包拦截 | 网络层双向 NAT，全电脑所有程序 TCP 流量无感重定向 |
 | **安装器** | PyInstaller 单文件打包 | 零依赖分发，一个 EXE 完成全部安装 |
 
 ### 核心机制详解
@@ -146,7 +147,42 @@ SpeedProxy 运行在 `127.0.0.1:19999`，通过修改 Windows 系统代理设置
 | NetworkThrottlingIndex | MMCSS | 0xFFFFFFFF | 禁用 Windows 多媒体网络节流（默认限 10% 带宽）|
 | 网卡参数 | NIC Driver | 全关节能、9K Jumbo、512 缓冲 | 减少中断延迟、最大化吞吐 |
 
-#### 5. 系统服务静默运行
+#### 5. TUN 全局透明代理
+
+对于不读取系统代理设置的程序（Steam、微信、网盘客户端、游戏启动器等），SpeedCore 通过 WinDivert 在内核网络层拦截所有 TCP 流量，实现真正的全电脑透明代理：
+
+```
+原程序 → TCP SYN (目标: internet:port)
+              │
+              ▼ WinDivert 网络层拦截
+         ┌──────────────────────┐
+         │ 双向 NAT              │
+         │ outbound: dst → :19998│
+         │ inbound:  src 还原    │
+         └──────────────────────┘
+              │
+              ▼
+         SpeedCore :19998 透明代理
+              │
+         ┌────┴────┐
+         │ NAT 查表 │ → 还原原始目标
+         └────┬────┘
+              │
+         ┌────┴────────┐
+         │ 直连 / 上游代理 │
+         │ 下载 → aria2c   │
+         └───────────────┘
+```
+
+技术要点：
+- **WinDivert**: 内核级数据包拦截，无需安装虚拟网卡
+- **双向 NAT**: 出站包改目标 + 入站包还原源地址，客户端完全无感
+- **覆盖所有 TCP 端口**: 不限于 80/443，网盘私有协议也能拦截
+- **NAT 表 + 协议嗅探**: HTTP Host 头 / TLS SNI 双路径还原目标
+
+已验证通过：Chrome/Edge、夸克网盘、阿里云盘、Steam、VS Code 等。
+
+#### 6. 系统服务静默运行
 
 通过 Windows 计划任务实现，而非传统 Windows Service：
 
@@ -211,6 +247,10 @@ spd optimize           # 一键 TCP/IP + 网卡极限优化 (需管理员)
 spd tcpopt --revert    # 恢复 TCP 默认设置
 spd tcpopt --status    # 查看当前 TCP 优化状态
 
+spd tun on             # 启动全局透明代理 (WinDivert, 全电脑所有程序)
+spd tun off            # 停止全局透明代理
+spd tun status         # 查看 TUN 状态
+
 spd get <URL>          # CLI 多线程下载 (直连 aria2c)
 spd speedtest          # 测速
 ```
@@ -230,6 +270,10 @@ speedcore/
   svc.py              # Windows 服务管理 (schtasks/nssm/注册表)
   proxy.py            # HTTP 透明代理服务器 (下载拦截 + 直通)
   tcpopt.py           # TCP/IP 栈 + 网卡注册表优化
+  tun.py              # TUN 全局透明代理 (WinDivert 双向 NAT)
+  divert.py           # WinDivert ctypes 封装
+  WinDivert.dll       # WinDivert 用户态库 (LGPL v3)
+  WinDivert64.sys     # WinDivert 内核驱动 (LGPL v3)
   _bootstrap.py       # SYSTEM 账户静默启动器 (自动生成)
   installer.py        # 一键安装器 (→ SpeedCore-Setup.exe)
   aria2c.exe          # aria2 下载引擎 (v1.37.0)
@@ -302,6 +346,7 @@ SpeedCore intercepts downloads at the system proxy layer, splits them into 128 c
 | **Upstream Passthrough** | `urllib.request.ProxyHandler` auto-detect chain | Non-download traffic routed through existing proxy (VPN/shadowsocks); normal browsing unaffected |
 | **TCP/IP Tuning** | Windows Registry + netsh + CTCP congestion control | TCP window scaling, RSS multi-queue, Chimney offload, NIC driver optimization |
 | **System Service** | `schtasks` + SYSTEM account + Session 0 | Auto-start at boot, headless silent operation, maximum system privileges |
+| **Global Interception** | [WinDivert](https://www.reqrypt.org/windivert.html) kernel-level packet interception | Bidirectional NAT at network layer, transparent TCP redirection for ALL programs |
 | **Installer** | PyInstaller single-file bundle | Zero-dependency distribution, one EXE for complete setup |
 
 ### Key Mechanisms
@@ -368,7 +413,42 @@ If upstream is unreachable → aria2 falls back to direct mode
 | NetworkThrottlingIndex | MMCSS | 0xFFFFFFFF | Disable Windows multimedia throttling |
 | NIC parameters | NIC Driver | No power saving, 9K Jumbo, 512 buffer | Minimize interrupt latency |
 
-#### 5. Silent System-Level Service
+#### 5. TUN Global Transparent Proxy
+
+For programs that bypass system proxy (Steam, WeChat, cloud drive clients, game launchers, etc.), SpeedCore intercepts ALL TCP traffic at the kernel network layer via WinDivert:
+
+```
+Program → TCP SYN (dst: internet:port)
+              │
+              ▼ WinDivert Network Layer
+         ┌──────────────────────┐
+         │ Bidirectional NAT     │
+         │ outbound: dst → :19998│
+         │ inbound:  src restore │
+         └──────────────────────┘
+              │
+              ▼
+         SpeedCore :19998 Transparent Proxy
+              │
+         ┌────┴────┐
+         │ NAT Table│ → Restore original destination
+         └────┬────┘
+              │
+         ┌────┴────────┐
+         │ Direct/Upstream│
+         │ Download→aria2c│
+         └───────────────┘
+```
+
+Key points:
+- **WinDivert**: Kernel-level packet interception, no virtual NIC needed
+- **Bidirectional NAT**: Outbound packets redirected + inbound source restored, transparent to clients
+- **All TCP ports**: Not limited to 80/443 — proprietary protocols intercepted too
+- **NAT table + protocol sniffing**: HTTP Host header / TLS SNI dual-path destination recovery
+
+Verified: Chrome/Edge, QuarkDrive, AliyunDrive, Steam, VS Code, and more.
+
+#### 6. Silent System-Level Service
 
 Implemented via Windows Task Scheduler rather than traditional Windows Service:
 
@@ -431,6 +511,9 @@ spd optimize           # One-click TCP/IP + NIC optimization (admin required)
 spd tcpopt --revert    # Restore TCP defaults
 spd tcpopt --status    # View TCP optimization state
 
+spd tun on / off       # Enable / Disable global transparent proxy (WinDivert)
+spd tun status         # View TUN mode status
+
 spd get <URL>          # CLI multi-threaded download
 spd speedtest          # Speed benchmark
 ```
@@ -441,6 +524,7 @@ spd speedtest          # Speed benchmark
 - **Python**: 3.10+ (only for manual install; not needed with Setup.exe)
 - **External packages**: Zero — pure Python stdlib
 - **Binary**: aria2c.exe bundled (5.6MB, LGPL licensed)
+- **Driver**: WinDivert.sys bundled (LGPL v3, used by TUN mode)
 
 ### Project Structure
 
@@ -450,6 +534,10 @@ speedcore/
   svc.py              # Windows service management (schtasks/nssm/registry)
   proxy.py            # HTTP transparent proxy (download interception + passthrough)
   tcpopt.py           # TCP/IP stack + NIC registry optimization
+  tun.py              # TUN global transparent proxy (WinDivert bidirectional NAT)
+  divert.py           # WinDivert ctypes bindings
+  WinDivert.dll       # WinDivert userspace library (LGPL v3)
+  WinDivert64.sys     # WinDivert kernel driver (LGPL v3)
   _bootstrap.py       # SYSTEM account silent launcher (auto-generated)
   installer.py        # One-click installer (→ SpeedCore-Setup.exe)
   aria2c.exe          # aria2 download engine (v1.37.0)
