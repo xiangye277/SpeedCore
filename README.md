@@ -6,6 +6,16 @@
 
 **Author / 作者:** Xiangye
 
+**Tech Stack / 技术栈:**
+[Python](https://www.python.org/) ·
+[aria2](https://github.com/aria2/aria2) ·
+[WinINET](https://learn.microsoft.com/en-us/windows/win32/wininet/) ·
+[WinHTTP](https://learn.microsoft.com/en-us/windows/win32/http/) ·
+[Windows Task Scheduler](https://learn.microsoft.com/en-us/windows/win32/taskschd/) ·
+[TCP/IP CTCP](https://learn.microsoft.com/en-us/windows/win32/winsock/) ·
+[PyInstaller](https://pyinstaller.org/) ·
+[Regex](https://docs.python.org/3/library/re.html)
+
 **Language / 语言:** [中文](#中文) | [English](#english)
 
 ---
