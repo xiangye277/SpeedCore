@@ -612,47 +612,43 @@ def _tun_relay(client_sock, client_addr):
         entry = tun_map.get(key)
 
     if entry is None:
-        # Can't find destination — try reading Host from HTTP header or SNI
+        # Can't find destination in NAT table — try peeking at protocol
+        dst_host = None
+        dst_port = None
         client_sock.settimeout(3)
         try:
             peek = client_sock.recv(4096, socket.MSG_PEEK)
-            # Try HTTP Host header
             host_match = re.search(rb"Host:\s*([^\r\n]+)", peek)
             if host_match:
                 host_str = host_match.group(1).decode("ascii", errors="ignore").strip()
                 if ":" in host_str:
-                    host, port_str = host_str.rsplit(":", 1)
-                    dst_host, dst_port = host, int(port_str)
+                    hp = host_str.rsplit(":", 1)
+                    dst_host, dst_port = hp[0], int(hp[1])
                 else:
                     dst_host, dst_port = host_str, 80
-            else:
-                # Try TLS SNI
-                if peek[:3] == b"\x16\x03\x01" or peek[:3] == b"\x16\x03\x03":
-                    # TLS ClientHello — parse SNI
-                    try:
-                        sni_len = int.from_bytes(peek[5:7], "big")
-                        if len(peek) > 7 + sni_len:
-                            sni_data = peek[7:7 + sni_len]
-                            # Find SNI extension (type 0x00 0x00)
-                            i = 0
-                            while i < len(sni_data) - 4:
-                                if sni_data[i:i+2] == b"\x00\x00":
-                                    sni_name_len = int.from_bytes(sni_data[i+2:i+4], "big")
-                                    sni_name = sni_data[i+4:i+4+sni_name_len].decode("ascii", errors="ignore")
-                                    dst_host, dst_port = sni_name, 443
-                                    break
-                                i += 2
-                if dst_host is None:
-                    client_sock.close()
-                    return
+            elif peek[:3] == b"\x16\x03\x01" or peek[:3] == b"\x16\x03\x03":
+                # TLS ClientHello — parse SNI
+                sni_data = peek[5:]
+                offset = 0
+                while offset < len(sni_data) - 8:
+                    b = sni_data[offset]
+                    if b == 0x00 and sni_data[offset + 1] == 0x00:
+                        slen = int.from_bytes(sni_data[offset + 2:offset + 4], "big")
+                        dst_host = sni_data[offset + 4:offset + 4 + slen].decode("ascii", errors="ignore")
+                        dst_port = 443
+                        break
+                    offset += 1
         except Exception:
+            pass
+
+        if dst_host is None:
             try:
                 client_sock.close()
             except Exception:
                 pass
             return
 
-        dst_host, dst_port = entry[0], int(entry[1]) if entry else (host_str, 80)
+        entry = (dst_host, dst_port)
 
     dst_host, dst_port = entry[0], int(entry[1])
 

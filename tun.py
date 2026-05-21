@@ -91,11 +91,12 @@ def run_tun():
     # Filter: capture both directions
     # Outbound: packets to TCP 80/443 (but NOT to our proxy)
     # Inbound: packets FROM our proxy
+    # Intercept ALL TCP (except proxy ports) — covers 百度网盘/迅雷 etc.
     filter_str = (
-        "(tcp.DstPort == 80 or tcp.DstPort == 443 or tcp.DstPort == 8080 or tcp.DstPort == 8443) "
-        "and tcp.DstPort != 19999 and tcp.DstPort != 19998 "
-        "and tcp.DstPort != 7892 "  # Don't intercept upstream proxy traffic
-        "or tcp.SrcPort == 19998 "  # Proxy return packets
+        "tcp.DstPort != 19999 and tcp.DstPort != 19998 "
+        "and tcp.DstPort != 7892 "  # Upstream proxy bypass
+        "and tcp.DstPort != 16800 "  # aria2 RPC bypass
+        "or tcp.SrcPort == 19998 "   # Proxy return packets
     )
 
     print(f"TUN starting — redirecting TCP 80/443 → 127.0.0.1:{TUN_PORT}")
